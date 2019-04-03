@@ -18,199 +18,174 @@
 
 %%
 
-PROGRAM		 	: COMPSTMT {printf("Success! Parsing complete.\n")}
+PROGRAM         : COMPSTMT
 
-COMPSTMT	 	: STMT (TERM EXPR)* [TERM]
+T               : ';' | '\n'
 
-STMT		   	: CALL do [`|' [BLOCK_VAR] `|'] COMPSTMT end
-           		| undef FNAME
-		       	| alias FNAME FNAME
-		       	| STMT if EXPR
-		       	| STMT while EXPR
-		       	| STMT unless EXPR
-		       	| STMT until EXPR
-           		| `BEGIN' `{' COMPSTMT `}'
-           		| `END' `{' COMPSTMT `}'
-           		| LHS `=' COMMAND [do [`|' [BLOCK_VAR] `|'] COMPSTMT end]
-		       	| EXPR
+COMPSTMT        : STMT {T EXPR} [T]
 
-EXPR		   	: MLHS `=' MRHS
-		       	| return CALL_ARGS
-		       	| yield CALL_ARGS
-		       	| EXPR and EXPR
-		       	| EXPR or EXPR
-		       	| not EXPR
-		       	| COMMAND
-		       	| `!' COMMAND
-		       	| ARG
+STMT            :   CALL do [ '|' [BLOCK_VAR] '|' ] COMPSTMT end
+                |   undef FNAME
+                |   alias FNAME FNAME
+                |   STMT if EXPR
+                |   STMT while EXPR
+                |   STMT unless EXPR
+                |   STMT until EXPR												
+                |   'BEGIN' '{' COMPSTMT '}'
+                |   'END' '{' COMPSTMT '}'
+                |   LHS = COMMAND [do [ '|' [BLOCK_VAR] '|' ] COMPSTMT end]
+                |   EXPR              
 
-CALL		   	: FUNCTION
-           		| COMMAND
+EXPR            :   MLHS = MRHS                                          												
+                |   return CALL_ARGS                                     
+                |   yield CALL_ARGS                                      
+                |   EXPR and EXPR                                        
+                |   EXPR or EXPR                                         
+                |   not EXPR                                             
+                |   COMMAND                                              
+                |   ! COMMAND                                            
+                |   ARG     
 
-COMMAND		 	: OPERATION CALL_ARGS
-		       	| PRIMARY `.' OPERATION CALL_ARGS
-		       	| PRIMARY `::' OPERATION CALL_ARGS
-		       	| super CALL_ARGS
+CALL            : FUNCTION                                               
+                | COMMAND                                                
 
-FUNCTION   		: OPERATION [`(' [CALL_ARGS] `)']
-		       	| PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
-		       	| PRIMARY `::' OPERATION `(' [CALL_ARGS] `)'
-		       	| PRIMARY `.' OPERATION
-		       	| PRIMARY `::' OPERATION
-		       	| super `(' [CALL_ARGS] `)'
-		       	| super
+COMMAND         :   OPERATION CALL_ARGS                                  
+                |   PRIMARY.OPERATION CALL_ARGS                          
+                |   PRIMARY :: OPERATION CALL_ARGS                       
+                |   super CALL_ARGS                                      
 
-ARG		     	: LHS `=' ARG
-		       	| LHS OP_ASGN ARG
-		       	| ARG `..' ARG
-		       	| ARG `...' ARG
-		       	| ARG `+' ARG
-		       	| ARG `-' ARG
-		       	| ARG `*' ARG
-		       	| ARG `/' ARG
-		       	| ARG `%' ARG
-		       	| ARG `**' ARG
-		       	| `+' ARG
-		       	| `-' ARG
-		       	| ARG `|' ARG
-		       	| ARG `^' ARG
-		       	| ARG `&' ARG
-		       	| ARG `<=>' ARG
-		       	| ARG `>' ARG
-		       	| ARG `>=' ARG
-		       	| ARG `<' ARG
-		       	| ARG `<=' ARG
-		       	| ARG `==' ARG
-		       	| ARG `===' ARG
-		       	| ARG `!=' ARG
-		       	| ARG `=~' ARG
-		       	| ARG `!~' ARG
-		       	| `!' ARG
-		       	| `~' ARG
-		       	| ARG `<<' ARG
-		       	| ARG `>>' ARG
-		       	| ARG `&&' ARG
-		       	| ARG `||' ARG
-		       	| defined? ARG
-		       	| PRIMARY
+FUNCTION        :   OPERATION ['(' [CALL_ARGS] ')']                      
+                |   PRIMARY.OPERATION '(' [CALL_ARGS] ')'                
+                |   PRIMARY :: OPERATION '(' [CALL_ARGS] ')'             
+                |   PRIMARY.OPERATION                                    
+                |   PRIMARY :: OPERATION                                 
+                |   super '(' [CALL_ARGS] ')'                            
+                |   super                                                
 
-PRIMARY		 	: `(' COMPSTMT `)'
-		       	| LITERAL
-		       	| VARIABLE
-		       	| PRIMARY `::' IDENTIFIER
-		       	| `::' IDENTIFIER
-		       	| PRIMARY `[' [ARGS] `]'
-		       	| `[' [ARGS [`,']] `]'
-		       	| `{' [(ARGS|ASSOCS) [`,']] `}'
-		       	| return [`(' [CALL_ARGS] `)']
-		       	| yield [`(' [CALL_ARGS] `)']
-		       	| defined? `(' ARG `)'
-           		| FUNCTION
-		       	| FUNCTION `{' [`|' [BLOCK_VAR] `|'] COMPSTMT `}'
-		       	| if EXPR THEN
-		       	COMPSTMT
-		       	(elsif EXPR THEN COMPSTMT)*
-		       	[else COMPSTMT]
-		         end
-		       	| unless EXPR THEN
-		         COMPSTMT
-		         [else COMPSTMT]
-		         end
-		       	| while EXPR DO COMPSTMT end
-		       	| until EXPR DO COMPSTMT end
-		       	| case COMPSTMT
-		         (when WHEN_ARGS THEN COMPSTMT)+
-		         [else COMPSTMT]
-		         end
-		       	| for BLOCK_VAR in EXPR DO
-		         COMPSTMT
-		         end
-		       	| begin
-		         COMPSTMT
-		         [rescue [ARGS] DO COMPSTMT]+
-		         [else COMPSTMT]
-		         [ensure COMPSTMT]
-		         end
-		       	| class IDENTIFIER [`<' IDENTIFIER]
-		         COMPSTMT
-		         end
-		       	| module IDENTIFIER
-		         COMPSTMT
-		         end
-		       	| def FNAME ARGDECL
-		         COMPSTMT
-		         end
-				| def SINGLETON (`.'|`::') FNAME ARGDECL
-		          COMPSTMT
-		          end
+ARG       :    LHS = ARG
+          |    LHS OP_ASGN ARG
+          |    ARG .. ARG | ARG ... ARG
+          |    ARG + ARG | ARG - ARG | ARG * ARG | ARG / ARG
+          |    ARG % ARG | ARG ** ARG
+          |    + ARG | - ARG
+          |    ARG '|' ARG
+          |    ARG ˆ ARG | ARG & ARG
+          |    ARG <=> ARG		  		  		  		  		  		  		  
+    	  |    ARG > ARG | ARG >= ARG | ARG < ARG | ARG <= ARG		  
+          |    ARG == ARG | ARG === ARG | ARG != ARG		  
+		  |    ARG =˜ ARG | ARG !˜ ARG
+		  |    ! ARG | ˜ ARG
+		  |    ARG << ARG | ARG >> ARG
+          |    ARG && ARG | ARG || ARG		  
+          |    defined? ARG		  
+          |    PRIMARY		  
 
-WHEN_ARGS		: ARGS [`,' `*' ARG]
-				| `*' ARG
+PRIMARY		: '('   COMPSTMT ')'
+			|   LITERAL
+			|   VARIABLE
+			|   PRIMARY :: IDENTIFIER
+			|   :: IDENTIFIER
+			|   PRIMARY '[' [ARGS] ']'
+			|   '[' [ARGS [,]] ']'
+			|   '{' [ARGS | ASSOCS [,]] '}'
+			|   return ['(' [CALL_ARGS] ')']
+			|   yield ['(' [CALL_ARGS] ')']
+			|   defined? '(' ARG ')'
+			|   FUNCTION
+			|   FUNCTION '{' ['|' [BLOCK_VAR] '|'] COMPSTMT '}'
+			|   if EXPR THEN
+			        COMPSTMT
+		    	{elsif EXPR THEN
+			       COMPSTMT}
+				    [else
+				       COMPSTMT]
+			    end
+			|   unless EXPR THEN
+			       COMPSTMT
+			    [else
+			       COMPSTMT]
+			    end
+			|   while EXPR DO COMPSTMT end
+			|   until EXPR DO COMPSTMT end
+			|   case COMPSTMT
+      				when WHEN_ARGS THEN COMPSTMT
+      			{when WHEN_ARGS THEN COMPSTMT}
+    			[else
+       			COMPSTMT]
+   			end
+            | for BLOCK_VAR in EXPR DO
+                 COMPSTMT
+              end
+            | begin
+                 COMPSTMT
+              {rescue [ARGS] DO
+                 COMPSTMT}
+              [else       
+                 COMPSTMT]
+              [ensure
+                 COMPSTMT]
+              end
+            | class IDENTIFIER [< IDENTIFIER]
+                 COMPSTMT
+              end        
+            | module IDENTIFIER
+                 COMPSTMT    
+              end
+            | def FNAME ARGDECL
+                 COMPSTMT
+              end        
+            | def SINGLETON (. | ::) FNAME ARGDECL
+                 COMPSTMT
+              end
 
-THEN			: TERM
-				| then
-				| TERM then
+WHEN_ARGS   : ARGS [, * ARG]   |    * ARG
 
-DO				: TERM
-				| do
-				| TERM do
+THEN        : T | then | T then
 
-BLOCK_VAR	 	: LHS
-				| MLHS
+DO          : T | do   | T do  
 
-MLHS		   	: MLHS_ITEM `,' [MLHS_ITEM (`,' MLHS_ITEM)*] [`*' [LHS]]
-				| `*' LHS
+BLOCK_VAR   : LHS | MLHS
 
-MLHS_ITEM	 	: LHS
-				| '(' MLHS ')'
+MLHS        : MLHS_ITEM , [MLHS_ITEM (, MLHS_ITEM)*] [* [LHS]]
+            | * LHS
 
-LHS			   	: VARIABLE
-				| PRIMARY `[' [ARGS] `]'
-				| PRIMARY `.' IDENTIFIER
+MLHS_ITEM   : LHS | '(' MLHS ')'
 
-MRHS		   	: ARGS [`,' `*' ARG]
-		       	| `*' ARG
+LHS         : VARIABLE          
+            | PRIMARY '[' [ARGS] ']' 
+            | PRIMARY.IDENTIFIER
 
-CALL_ARGS	 	: ARGS
-				| ARGS [`,' ASSOCS] [`,' `*' ARG] [`,' `&' ARG]
-		     	| ASSOCS [`,' `*' ARG] [`,' `&' ARG]
-		     	| `*' ARG [`,' `&' ARG]
-		     	| `&' ARG
-				| COMMAND
+MRHS        : ARGS [, * ARG]    |   * ARG
 
-ARGS 		 	: ARG (`,' ARG)*
+CALL_ARGS   :   ARGS 
+            |   ARGS [, ASSOCS] [, * ARG] [, & ARG]
+            |   ASSOCS [, * ARG] [, & ARG]
+            |   * ARG [, & ARG] | & ARG
+            |   COMMAND
 
-ARGDECL		 	: `(' ARGLIST `)'
-				| ARGLIST TERM
+ARGS        : ARG (, ARG)* 
 
-ARGLIST		 	: IDENTIFIER(`,'IDENTIFIER)*[`,'`*'[IDENTIFIER]][`,'`&'IDENTIFIER]
-				| `*'IDENTIFIER[`,'`&'IDENTIFIER]
-				| [`&'IDENTIFIER]
+ARGDECL     : '(' ARGLIST ')'
+			| ARGLIST T
 
-SINGLETON	 	: VARIABLE
-				| `(' EXPR `)'
+ARGLIST     : IDENTIFIER(,IDENTIFIER)*[, *[IDENTIFIER]][,&IDENTIFIER]
+            | *IDENTIFIER[, &IDENTIFIER]
+            | [&IDENTIFIER]
 
-ASSOCS			: ASSOC (`,' ASSOC)*
+SINGLETON   : VARIABLE
+            | '(' EXPR ')'
 
-ASSOC		    : ARG `=>' ARG
+ASSOCS      : ASSOC {, ASSOC}
 
-VARIABLE	 	: VARNAME
-				| nil
-		       	| self
+ASSOC       : ARG => ARG
 
-LITERAL		 	: numeric
-		       	| SYMBOL
-		       	| STRING
-		       	| STRING2
-		       	| HERE_DOC
-		       	| REGEXP
+VARIABLE    : VARNAME | nil | self
 
-TERM		   	: `;'
-		       	| `\n'
-
+LITERAL     : numeric | SYMBOL | STRING | STRING2 | HERE_DOC | REGEXP
+																										
 %%
 
 int yyerror(const char *s) {
-  printf("%s);
+  printf('%s);
   return 1;
 }
