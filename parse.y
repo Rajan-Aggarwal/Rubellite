@@ -1,64 +1,216 @@
 %{
   #include <stdio.h>
-  #include "node.h"
-  extern void yyerror(struct parser_state *state, const char *s);
+  int yylex();
+  int yyerror();
+  extern FILE* yyin;
+  extern int yylineno;
+  extern char* yytext;
 %}
 
-%pure-parser
-%parse-param { parser_state *state }
-%lex-param { state }
+%token do end undef alias if while unless until
+%token return yield and or not super self
+%token defined? elsif else end case in nil 
+%token when rescue ensure class module then def
+%token OP_ASSGN SYMBOL FNAME OPERATION VARNAME GLOBAL 
+%token STRING2 HERE_DOC REGEXP IDENTIFIER
 
-%union {
-  int ival;
-  float fval;
-  char *sval;
-}
-
-%{
-  extern int yylex(YYSTYPE *yylval, parser_state *state);
-%}
-
-
-%left tPLUS
-%right tEQUAL
-
-%token tFLOAT tNUMBER tEQUAL tGT tLT tGTE tLTE tNEQUAL
-%token tPLUS tMINUS tMULT tDIV tMOD tEMARK tQMARK tAND tOR tLSBRACE tRSBRACE
-%token tLPAREN tRPAREN tLBRACE tRBRACE tAT tDOT tCOMMA tCOLON
-%token kCLASS kEND kDEF
-%token <sval> tSTRING tCONSTANT tID
-
-%start program
+%start PROGRAM
 
 %%
 
-program: expressions { printf("Success!\n"); }
+PROGRAM		 : COMPSTMT {printf("Success! Parsing complete.\n")}
 
-expressions: expressions expression
-           | expression
+COMPSTMT	 : STMT (TERM EXPR)* [TERM]
 
-expression: class_definition
-          | binary_expression
-          | method_definition
-          | variable
-          | assignment
-          | method_call
-          | value
+STMT		   : CALL do [`|' [BLOCK_VAR] `|'] COMPSTMT end
+           | undef FNAME
+		       | alias FNAME FNAME
+		       | STMT if EXPR
+		       | STMT while EXPR
+		       | STMT unless EXPR
+		       | STMT until EXPR
+           | `BEGIN' `{' COMPSTMT `}'
+           | `END' `{' COMPSTMT `}'
+           | LHS `=' COMMAND [do [`|' [BLOCK_VAR] `|'] COMPSTMT end]
+		       | EXPR
 
-binary_expression: expression tPLUS expression
+EXPR		   : MLHS `=' MRHS
+		       | return CALL_ARGS
+		       | yield CALL_ARGS
+		       | EXPR and EXPR
+		       | EXPR or EXPR
+		       | not EXPR
+		       | COMMAND
+		       | `!' COMMAND
+		       | ARG
 
-assignment: variable tEQUAL expression
+CALL		   : FUNCTION
+           | COMMAND
 
-class_definition: kCLASS tCONSTANT expressions kEND { free($2); }
+COMMAND		 : OPERATION CALL_ARGS
+		       | PRIMARY `.' OPERATION CALL_ARGS
+		       | PRIMARY `::' OPERATION CALL_ARGS
+		       | super CALL_ARGS
 
-method_definition: kDEF tID expressions kEND { free($2); }
-                 | kDEF tID tLPAREN tID tRPAREN expressions kEND { free($2); free($4); }
+FUNCTION   : OPERATION [`(' [CALL_ARGS] `)']
+		       | PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
+		       | PRIMARY `::' OPERATION `(' [CALL_ARGS] `)'
+		       | PRIMARY `.' OPERATION
+		       | PRIMARY `::' OPERATION
+		       | super `(' [CALL_ARGS] `)'
+		       | super
 
-method_call: variable tDOT tID { free($3); }
-           | tCONSTANT tDOT tID tLPAREN tSTRING tRPAREN { free($1); free($3); free($5); }
-           | tID tSTRING { free($1); free($2); }
+ARG		     : LHS `=' ARG
+		       | LHS OP_ASGN ARG
+		       | ARG `..' ARG
+		       | ARG `...' ARG
+		       | ARG `+' ARG
+		       | ARG `-' ARG
+		       | ARG `*' ARG
+		       | ARG `/' ARG
+		       | ARG `%' ARG
+		       | ARG `**' ARG
+		       | `+' ARG
+		       | `-' ARG
+		       | ARG `|' ARG
+		       | ARG `^' ARG
+		       | ARG `&' ARG
+		       | ARG `<=>' ARG
+		       | ARG `>' ARG
+		       | ARG `>=' ARG
+		       | ARG `<' ARG
+		       | ARG `<=' ARG
+		       | ARG `==' ARG
+		       | ARG `===' ARG
+		       | ARG `!=' ARG
+		       | ARG `=~' ARG
+		       | ARG `!~' ARG
+		       | `!' ARG
+		       | `~' ARG
+		       | ARG `<<' ARG
+		       | ARG `>>' ARG
+		       | ARG `&&' ARG
+		       | ARG `||' ARG
+		       | defined? ARG
+		       | PRIMARY
 
-variable: tID { free($1); }
-        | tAT tID { free($2); }
+PRIMARY		 : `(' COMPSTMT `)'
+		       | LITERAL
+		       | VARIABLE
+		       | PRIMARY `::' IDENTIFIER
+		       | `::' IDENTIFIER
+		       | PRIMARY `[' [ARGS] `]'
+		       | `[' [ARGS [`,']] `]'
+		       | `{' [(ARGS|ASSOCS) [`,']] `}'
+		       | return [`(' [CALL_ARGS] `)']
+		       | yield [`(' [CALL_ARGS] `)']
+		       | defined? `(' ARG `)'
+           | FUNCTION
+		       | FUNCTION `{' [`|' [BLOCK_VAR] `|'] COMPSTMT `}'
+		       | if EXPR THEN
+		       COMPSTMT
+		       (elsif EXPR THEN COMPSTMT)*
+		       [else COMPSTMT]
+		         end
+		       | unless EXPR THEN
+		         COMPSTMT
+		         [else COMPSTMT]
+		         end
+		       | while EXPR DO COMPSTMT end
+		       | until EXPR DO COMPSTMT end
+		       | case COMPSTMT
+		         (when WHEN_ARGS THEN COMPSTMT)+
+		         [else COMPSTMT]
+		         end
+		       | for BLOCK_VAR in EXPR DO
+		         COMPSTMT
+		         end
+		       | begin
+		         COMPSTMT
+		         [rescue [ARGS] DO COMPSTMT]+
+		         [else COMPSTMT]
+		         [ensure COMPSTMT]
+		         end
+		       | class IDENTIFIER [`<' IDENTIFIER]
+		         COMPSTMT
+		         end
+		       | module IDENTIFIER
+		         COMPSTMT
+		         end
+		       | def FNAME ARGDECL
+		         COMPSTMT
+		         end
+		       | def SINGLETON (`.'|`::') FNAME ARGDECL
+		         COMPSTMT
+		         end
 
-value: tNUMBER
+WHEN_ARGS	 : ARGS [`,' `*' ARG]
+		       | `*' ARG
+
+THEN		   : TERM
+		       | then
+		       | TERM then
+
+DO		     : TERM
+		       | do
+		       | TERM do
+
+BLOCK_VAR	 : LHS
+		       | MLHS
+
+MLHS		   : MLHS_ITEM `,' [MLHS_ITEM (`,' MLHS_ITEM)*] [`*' [LHS]]
+           | `*' LHS
+
+MLHS_ITEM	 : LHS
+		       | '(' MLHS ')'
+
+LHS		     : VARIABLE
+		       | PRIMARY `[' [ARGS] `]'
+		       | PRIMARY `.' IDENTIFIER
+
+MRHS		   : ARGS [`,' `*' ARG]
+		       | `*' ARG
+
+CALL_ARGS	 : ARGS
+		       | ARGS [`,' ASSOCS] [`,' `*' ARG] [`,' `&' ARG]
+		       | ASSOCS [`,' `*' ARG] [`,' `&' ARG]
+		       | `*' ARG [`,' `&' ARG]
+		       | `&' ARG
+		       | COMMAND
+
+ARGS 		   : ARG (`,' ARG)*
+
+ARGDECL		 : `(' ARGLIST `)'
+		       | ARGLIST TERM
+
+ARGLIST		 : IDENTIFIER(`,'IDENTIFIER)*[`,'`*'[IDENTIFIER]][`,'`&'IDENTIFIER]
+		       | `*'IDENTIFIER[`,'`&'IDENTIFIER]
+		       | [`&'IDENTIFIER]
+
+SINGLETON	 : VARIABLE
+		       | `(' EXPR `)'
+
+ASSOCS		 : ASSOC (`,' ASSOC)*
+
+ASSOC		   : ARG `=>' ARG
+
+VARIABLE	 : VARNAME
+		       | nil
+		       | self
+
+LITERAL		 : numeric
+		       | SYMBOL
+		       | STRING
+		       | STRING2
+		       | HERE_DOC
+		       | REGEXP
+
+TERM		   : `;'
+		       | `\n'
+
+%%
+
+int yyerror(const char *s) {
+  printf("%s);
+  return 1;
+}
