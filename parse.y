@@ -73,12 +73,6 @@
 %token tCOLON3		/* :: at EXPR_BEG */
 %token tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		/* => */
-%token tLPAREN		/* ( */
-%token tRPAREN		/* ) */
-%token tLBRACK		/* [ */
-%token tLBRACE		/* { */
-%token tSTAR		/* * */
-%token tAMPER		/* & */
 %token tLAMBDA		/* -> */
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
 %token tSTRING_DBEG tSTRING_DVAR tSTRING_END tLAMBEG
@@ -88,7 +82,7 @@
  */
 
 %nonassoc tLOWEST
-%nonassoc tLBRACE
+%nonassoc '{'
 
 %nonassoc  keyword_if keyword_unless keyword_while keyword_until
 %left  keyword_or keyword_and
@@ -198,7 +192,7 @@ block_command	: block_call
 				| block_call tCOLON2 operation2 command_args
 				;
 
-cmd_brace_block	:	tLBRACE opt_block_param compstmt '}';
+cmd_brace_block	:	'{' opt_block_param compstmt '}';
 
 command		: operation command_args       %prec tLOWEST
 			| operation command_args cmd_brace_block
@@ -211,27 +205,27 @@ command		: operation command_args       %prec tLOWEST
 			;
 
 mlhs	: mlhs_basic
-		| tLPAREN mlhs_inner rparen
+		| '(' mlhs_inner rparen
 		;
 
 mlhs_inner	: mlhs_basic
-			| tLPAREN mlhs_inner rparen
+			| '(' mlhs_inner rparen
 		;
 
 mlhs_basic	: mlhs_head
 			| mlhs_head mlhs_item
-			| mlhs_head tSTAR mlhs_node
-			| mlhs_head tSTAR mlhs_node ',' mlhs_post 
-			| mlhs_head tSTAR
-			| mlhs_head tSTAR ',' mlhs_post
-			| tSTAR mlhs_node
-			| tSTAR mlhs_node ',' mlhs_post
-			| tSTAR
-			| tSTAR ',' mlhs_post
+			| mlhs_head '*' mlhs_node
+			| mlhs_head '*' mlhs_node ',' mlhs_post 
+			| mlhs_head '*'
+			| mlhs_head '*' ',' mlhs_post
+			| '*' mlhs_node
+			| '*' mlhs_node ',' mlhs_post
+			| '*'
+			| '*' ',' mlhs_post
 			;
 
 mlhs_item	: mlhs_node
-			| tLPAREN mlhs_inner rparen
+			| '(' mlhs_inner rparen
 			;
 
 mlhs_head	: mlhs_item ','
@@ -308,7 +302,7 @@ op		: '|'
 		| '+'
 		| '-'
 		| '*'
-		| tSTAR
+		| '*'
 		| '/'
 		| '%'
 		| tPOW
@@ -409,7 +403,7 @@ call_args	: command
 
 command_args	: call_args;
 
-block_arg	: tAMPER arg_value;
+block_arg	: '&' arg_value;
 
 opt_block_arg	: ',' block_arg
 				| ','
@@ -417,14 +411,14 @@ opt_block_arg	: ',' block_arg
 				;
 
 args	: arg_value
-		| tSTAR arg_value
+		| '*' arg_value
 		| args ',' arg_value
-		| args ',' tSTAR arg_value
+		| args ',' '*' arg_value
 		;
 
 mrhs	: args ',' arg_value
-		| args ',' tSTAR arg_value
-		| tSTAR arg_value
+		| args ',' '*' arg_value
+		| '*' arg_value
 		;
 
 primary		: literal
@@ -437,12 +431,12 @@ primary		: literal
 			| backref
 			| tIDENTIFIER
 			| k_begin bodystmt k_end
-			| tLPAREN expr rparen
-			| tLPAREN compstmt ')'
+			| '(' expr rparen
+			| '(' compstmt ')'
 			| primary_value tCOLON2 tCONSTANT
 			| tCOLON3 tCONSTANT
-			| tLBRACK aref_args ']'
-			| tLBRACE assoc_list '}'
+			| '[' aref_args ']'
+			| '{' assoc_list '}'
 			| keyword_return
 			| keyword_yield '(' call_args rparen
 			| keyword_yield '(' rparen
@@ -511,7 +505,7 @@ for_var	: lhs
 		;
 
 f_marg	: f_norm_arg
-		| tLPAREN f_margs rparen
+		| '(' f_margs rparen
 		;
 
 f_marg_list	: f_marg
@@ -519,14 +513,14 @@ f_marg_list	: f_marg
 			;
 
 f_margs	: f_marg_list
-		| f_marg_list ',' tSTAR f_norm_arg
-		| f_marg_list ',' tSTAR f_norm_arg ',' f_marg_list
-		| f_marg_list ',' tSTAR
-		| f_marg_list ',' tSTAR ',' f_marg_list
-		| tSTAR f_norm_arg
-		| tSTAR f_norm_arg ',' f_marg_list
-		| tSTAR
-		| tSTAR ',' f_marg_list
+		| f_marg_list ',' '*' f_norm_arg
+		| f_marg_list ',' '*' f_norm_arg ',' f_marg_list
+		| f_marg_list ',' '*'
+		| f_marg_list ',' '*' ',' f_marg_list
+		| '*' f_norm_arg
+		| '*' f_norm_arg ',' f_marg_list
+		| '*'
+		| '*' ',' f_marg_list
 		;
 
 block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_f_block_arg
@@ -754,7 +748,7 @@ f_norm_arg	: f_bad_arg
 			;
 
 f_arg_item	: f_norm_arg
-			| tLPAREN f_margs rparen
+			| '(' f_margs rparen
 			;
 
 f_arg		: f_arg_item
@@ -774,7 +768,7 @@ f_optarg	: f_opt
 			;
 
 restarg_mark	: '*'
-				| tSTAR
+				| '*'
 				;
 
 f_rest_arg	: restarg_mark tIDENTIFIER
@@ -782,7 +776,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			;
 
 blkarg_mark	: '&'
-			| tAMPER
+			| '&'
 			;
 
 f_block_arg	: blkarg_mark tIDENTIFIER;

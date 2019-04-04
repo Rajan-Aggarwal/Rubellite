@@ -20,7 +20,7 @@ NUMBER [0-9](_[0-9]|[0-9])*
 /* comments */
 #.*$ {}	
 
-
+	
 /* keywords */
 "class"		key(class)
 "module"	key(module)
