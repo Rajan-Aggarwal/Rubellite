@@ -32,9 +32,6 @@
 	keyword_retry
 	keyword_in
 	keyword_do
-	keyword_do_cond
-	keyword_do_block
-	keyword_do_LAMBDA
 	keyword_return
 	keyword_yield
 	keyword_super
@@ -45,11 +42,6 @@
 	keyword_and
 	keyword_or
 	keyword_not
-	modifier_if
-	modifier_unless
-	modifier_while
-	modifier_until
-	modifier_rescue
 	keyword_alias
 	keyword_defined
 	keyword_BEGIN
@@ -58,7 +50,7 @@
 	keyword__FILE__
 	keyword__ENCODING__
 
-%token tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
+%token tIDENTIFIER tGVAR tIVAR tCONSTANT tCVAR tLABEL
 %token tINTEGER tFLOAT tSTRING_CONTENT tCHAR
 %token tNTH_REF tBACK_REF
 %token tREGEXP_END
@@ -79,14 +71,12 @@
 %token tLSHFT tRSHFT	/* << and >> */
 %token tCOLON2		/* :: */
 %token tCOLON3		/* :: at EXPR_BEG */
-%token <id> tOP_ASGN	/* +=, -=  etc. */
+%token tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		/* => */
 %token tLPAREN		/* ( */
-%token tLPAREN_ARG	/* ( */
 %token tRPAREN		/* ) */
 %token tLBRACK		/* [ */
 %token tLBRACE		/* { */
-%token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
 %token tLAMBDA		/* -> */
@@ -98,14 +88,14 @@
  */
 
 %nonassoc tLOWEST
-%nonassoc tLBRACE_ARG
+%nonassoc tLBRACE
 
-%nonassoc  modifier_if modifier_unless modifier_while modifier_until
+%nonassoc  keyword_if keyword_unless keyword_while keyword_until
 %left  keyword_or keyword_and
 %right keyword_not
 %nonassoc keyword_defined
 %right '=' tOP_ASGN
-%left modifier_rescue
+%left keyword_rescue
 %right '?' ':'
 %nonassoc tDOT2 tDOT3
 %left  tOROP
@@ -166,11 +156,11 @@ stmt	: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| keyword_alias tGVAR tBACK_REF
 		| keyword_alias tGVAR tNTH_REF
 		| keyword_undef undef_list
-		| stmt modifier_if expr_value
-		| stmt modifier_unless expr_value
-		| stmt modifier_while expr_value
-		| stmt modifier_until expr_value
-		| stmt modifier_rescue stmt
+		| stmt keyword_if expr_value
+		| stmt keyword_unless expr_value
+		| stmt keyword_while expr_value
+		| stmt keyword_until expr_value
+		| stmt keyword_rescue stmt
 		| keyword_END '{' compstmt '}'
 		| lhs '=' command_call
 		| mlhs '=' command_call
@@ -208,7 +198,7 @@ block_command	: block_call
 				| block_call tCOLON2 operation2 command_args
 				;
 
-cmd_brace_block	:	tLBRACE_ARG opt_block_param compstmt '}';
+cmd_brace_block	:	tLBRACE opt_block_param compstmt '}';
 
 command		: operation command_args       %prec tLOWEST
 			| operation command_args cmd_brace_block
@@ -283,7 +273,7 @@ cpath	: tCOLON3 cname
 
 fname	: tIDENTIFIER
 		| tCONSTANT
-		| tFID
+		| tIDENTIFIER
 		| op
 		| reswords
 		;
@@ -346,9 +336,9 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 			;
 
 arg		: lhs '=' arg
-		| lhs '=' arg modifier_rescue arg
+		| lhs '=' arg keyword_rescue arg
 		| var_lhs tOP_ASGN arg
-		| var_lhs tOP_ASGN arg modifier_rescue arg
+		| var_lhs tOP_ASGN arg keyword_rescue arg
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
 		| primary_value '.' tIDENTIFIER tOP_ASGN arg
 		| primary_value '.' tCONSTANT tOP_ASGN arg
@@ -445,9 +435,9 @@ primary		: literal
 			| qwords
 			| var_ref
 			| backref
-			| tFID
+			| tIDENTIFIER
 			| k_begin bodystmt k_end
-			| tLPAREN_ARG expr rparen
+			| tLPAREN expr rparen
 			| tLPAREN compstmt ')'
 			| primary_value tCOLON2 tCONSTANT
 			| tCOLON3 tCONSTANT
@@ -505,7 +495,7 @@ then	: term
 		;
 
 do		: term
-		| keyword_do_cond
+		| keyword_do
 		;
 
 if_tail	: opt_else
@@ -584,10 +574,10 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 			;
 
 lambda_body	: tLAMBEG compstmt '}'
-			| keyword_do_LAMBDA compstmt keyword_end
+			| keyword_do compstmt keyword_end
 			;
 
-do_block	: keyword_do_block opt_block_param compstmt keyword_end;
+do_block	: keyword_do opt_block_param compstmt keyword_end;
 
 block_call	: command do_block
 			| block_call '.' operation2 opt_paren_args
@@ -819,17 +809,17 @@ assoc	: arg_value tASSOC arg_value
 
 operation	: tIDENTIFIER
 			| tCONSTANT
-			| tFID
+			| tIDENTIFIER
 			;
 
 operation2	: tIDENTIFIER
 			| tCONSTANT
-			| tFID
+			| tIDENTIFIER
 			| op
 			;
 
 operation3	: tIDENTIFIER
-			| tFID
+			| tIDENTIFIER
 			| op
 			;
 
