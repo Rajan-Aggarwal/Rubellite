@@ -4,19 +4,6 @@
    extern FILE *yyin;
    extern int yylineo;
    extern char *yytext;
-
-   enum lex_state_e {
-    EXPR_BEG,			/* ignore newline, +/- is a sign. */
-    EXPR_END,			/* newline significant, +/- is an operator. */
-    EXPR_ENDARG,		/* ditto, and unbound braces. */
-    EXPR_ARG,			/* newline significant, +/- is an operator. */
-    EXPR_CMDARG,		/* newline significant, +/- is an operator. */
-    EXPR_MID,			/* newline significant, +/- is an operator. */
-    EXPR_FNAME,			/* ignore newline, no reserved words. */
-    EXPR_DOT,			/* right after `.' or `::', no reserved words. */
-    EXPR_CLASS,			/* immediate after `class', no here document. */
-    EXPR_VALUE			/* alike EXPR_BEG but label is disallowed. */
-};
 %}
 
 
@@ -147,9 +134,11 @@
 %nonassoc id_core_set_postexe
 
 %token tLAST_TOKEN
+%start program
 
 %%
-program		:  {lex_state = EXPR_BEG;} top_compstmt;
+
+program		:  top_compstmt;
 
 top_compstmt	: top_stmts opt_terms;
 
@@ -874,3 +863,10 @@ terms	: term
 		;
 
 none	: /* none */;
+
+%%
+
+int yyerror(const char *msg) {
+   printf("Error! %s", msg);
+   return 1;
+}
