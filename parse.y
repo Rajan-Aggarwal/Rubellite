@@ -1,8 +1,11 @@
 
 %{
     #include <stdio.h>
-    extern int yylex()
-    extern int yyerror(char *msg)
+    extern int yycolumn;
+    extern int yylex();
+    extern FILE *yyin;
+    extern int yylineno;
+    int yyerror(char const *s);
 %}
 
 
@@ -151,3 +154,23 @@ range_expr : TLBRACKET expr TRANGE expr TRBRACKET
             ;
 
 %%
+
+int main(int argc,char* argv[])
+{
+  if(argc>1) {
+    yyin = fopen(argv[1],"r");
+  } else {
+    printf("Enter the Expression\n");
+  }
+  printf("hELLO");
+  do
+  {
+    if(yyparse())
+    {
+      printf("\n Failure\n");
+      exit(0);
+    }
+  } while(!feof(yyin));
+  printf("\nSuccess\n");
+  return 0;
+}

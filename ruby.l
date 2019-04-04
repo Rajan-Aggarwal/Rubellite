@@ -29,6 +29,15 @@ std::stack<std::string> fileNames;
 std::stack<int> lineNo;
 std::vector<std::string> libPaths;
 
+
+#define YY_USER_ACTION do { \
+    if( yylloc.last_line < yylineno ) yycolumn = 1 ; \
+    yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + (int)yyleng - 1; \
+    yycolumn += (int)yyleng; \
+    } while(0) ;
+
+
 %}
 
 %option yylineno
@@ -55,10 +64,31 @@ number  {num1}|{num2}
             
 import              BEGIN(incl);
 <incl>[ \t]*        /* eat the whitespace */
-<incl>[^ \t\n\r]+   {
+<incl>[^ \t\n\r]+   { /* got the include file name */
+                    std::string fileName = yytext;
+                    std::size_t pos = fileName.find(".liq");
+                    if( pos == std::string::npos ) {
+                        fileName += ".liq";
+                    }
+                    for( auto libpath : libPaths ) {
+                        yyin = fopen( (libpath + fileName).c_str() , "r" );
+                        if( yyin )
+                            break;
+                    }
+                    if ( ! yyin ) {
+                       printf( "%s in %s line %d\n", (std::string("Failed to load import file ") + fileName).c_str(), fileNames.top().c_str(), yylineno );
+                       parsing_error = 1;
+                       yyterminate();
+                    } else {
+                       fileNames.push(yytext);
+                       lineNo.push(yylineno);
+                       yylineno = yycolumn = 1;
+                       yylloc.first_line = yylloc.first_column =  yylloc.last_line = yylloc.last_column = 1;
+                       yypush_buffer_state(yy_create_buffer( yyin, YY_BUF_SIZE ));
+                    }
                     BEGIN(normal);
                     }
-     
+
 
 \@\{                BEGIN(comment);
 <comment>\@\}.*     BEGIN(normal);
@@ -115,7 +145,7 @@ import              BEGIN(incl);
                    }
                    if( curr_indents.size() > 1 ) {
                         curr_indents.pop();
-                        return  UNINDENT;
+                        return UNINDENT;
                    }
                  }
                   
@@ -164,3 +194,10 @@ import              BEGIN(incl);
 .                       printf("line %d, len %d Unknown token %s !\n", yylineno, yyleng, yytext); yyterminate();
 
 %%
+
+int yyerror(char const * s )
+{
+    printf("ERROR %s in '%s' at line %d col %d\n", s, yytext, yylineno, yycolumn);
+    return 1;
+}
+

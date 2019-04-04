@@ -65,10 +65,13 @@
 #line 2 "parse.y" /* yacc.c:339  */
 
     #include <stdio.h>
-    extern int yylex()
-    extern int yyerror(char *msg)
+    extern int yycolumn;
+    extern int yylex();
+    extern FILE *yyin;
+    extern int yylineno;
+    int yyerror(char const *s);
 
-#line 72 "parse.tab.c" /* yacc.c:339  */
+#line 75 "parse.tab.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -176,7 +179,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 180 "parse.tab.c" /* yacc.c:358  */
+#line 183 "parse.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -479,14 +482,14 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    35,    35,    36,    39,    40,    43,    44,    45,    46,
-      47,    48,    49,    50,    51,    55,    56,    59,    60,    63,
-      64,    67,    68,    71,    74,    75,    78,    79,    80,    83,
-      86,    87,    90,    91,    92,    93,    97,    98,   101,   102,
-     103,   104,   105,   106,   107,   108,   109,   110,   111,   114,
-     115,   116,   117,   118,   119,   122,   125,   128,   129,   130,
-     133,   133,   133,   133,   133,   133,   136,   137,   138,   141,
-     144,   147,   148,   150
+       0,    38,    38,    39,    42,    43,    46,    47,    48,    49,
+      50,    51,    52,    53,    54,    58,    59,    62,    63,    66,
+      67,    70,    71,    74,    77,    78,    81,    82,    83,    86,
+      89,    90,    93,    94,    95,    96,   100,   101,   104,   105,
+     106,   107,   108,   109,   110,   111,   112,   113,   114,   117,
+     118,   119,   120,   121,   122,   125,   128,   131,   132,   133,
+     136,   136,   136,   136,   136,   136,   139,   140,   141,   144,
+     147,   150,   151,   153
 };
 #endif
 
@@ -1464,7 +1467,7 @@ yyreduce:
   switch (yyn)
     {
       
-#line 1468 "parse.tab.c" /* yacc.c:1646  */
+#line 1471 "parse.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1699,4 +1702,25 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 153 "parse.y" /* yacc.c:1906  */
+#line 156 "parse.y" /* yacc.c:1906  */
+
+
+int main(int argc,char* argv[])
+{
+  if(argc>1) {
+    yyin = fopen(argv[1],"r");
+  } else {
+    printf("Enter the Expression\n");
+  }
+  printf("hELLO");
+  do
+  {
+    if(yyparse())
+    {
+      printf("\n Failure\n");
+      exit(0);
+    }
+  } while(!feof(yyin));
+  printf("\nSuccess\n");
+  return 0;
+}

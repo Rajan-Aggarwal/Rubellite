@@ -619,12 +619,21 @@ std::stack<std::string> fileNames;
 std::stack<int> lineNo;
 std::vector<std::string> libPaths;
 
+
+#define YY_USER_ACTION do { \
+    if( yylloc.last_line < yylineno ) yycolumn = 1 ; \
+    yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + (int)yyleng - 1; \
+    yycolumn += (int)yyleng; \
+    } while(0) ;
+
+
  
  
 
 
 
-#line 628 "lex.yy.c"
+#line 637 "lex.yy.c"
 
 #define INITIAL 0
 #define indent 1
@@ -848,7 +857,7 @@ YY_DECL
 		}
 
 	{
-#line 47 "ruby.l"
+#line 56 "ruby.l"
 
 
             if( first_time ) {
@@ -858,7 +867,7 @@ YY_DECL
             }
 
             
-#line 862 "lex.yy.c"
+#line 871 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -927,133 +936,154 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 56 "ruby.l"
+#line 65 "ruby.l"
 BEGIN(incl);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 57 "ruby.l"
+#line 66 "ruby.l"
 /* eat the whitespace */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 58 "ruby.l"
-{
+#line 67 "ruby.l"
+{ /* got the include file name */
+                    std::string fileName = yytext;
+                    std::size_t pos = fileName.find(".liq");
+                    if( pos == std::string::npos ) {
+                        fileName += ".liq";
+                    }
+                    for( auto libpath : libPaths ) {
+                        yyin = fopen( (libpath + fileName).c_str() , "r" );
+                        if( yyin )
+                            break;
+                    }
+                    if ( ! yyin ) {
+                       printf( "%s in %s line %d\n", (std::string("Failed to load import file ") + fileName).c_str(), fileNames.top().c_str(), yylineno );
+                       parsing_error = 1;
+                       yyterminate();
+                    } else {
+                       fileNames.push(yytext);
+                       lineNo.push(yylineno);
+                       yylineno = yycolumn = 1;
+                       yylloc.first_line = yylloc.first_column =  yylloc.last_line = yylloc.last_column = 1;
+                       yypush_buffer_state(yy_create_buffer(yyin,YY_BUF_SIZE ));
+                    }
                     BEGIN(normal);
                     }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 63 "ruby.l"
+#line 93 "ruby.l"
 BEGIN(comment);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 64 "ruby.l"
+#line 94 "ruby.l"
 BEGIN(normal);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 65 "ruby.l"
+#line 95 "ruby.l"
 ;/* eat everything */
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 66 "ruby.l"
+#line 96 "ruby.l"
 ;/* eat everything */
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 68 "ruby.l"
+#line 98 "ruby.l"
 g_str = ""; BEGIN(str);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 69 "ruby.l"
+#line 99 "ruby.l"
 g_str = ""; BEGIN(qstr);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 71 "ruby.l"
+#line 101 "ruby.l"
 {   BEGIN(normal);
             return TSTR;
         }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 74 "ruby.l"
+#line 104 "ruby.l"
 {   BEGIN(normal);
             return TSTR;
         }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 78 "ruby.l"
+#line 108 "ruby.l"
 g_str += "\n";
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 79 "ruby.l"
+#line 109 "ruby.l"
 g_str += "\t";
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 80 "ruby.l"
+#line 110 "ruby.l"
 g_str += "\r";
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 81 "ruby.l"
+#line 111 "ruby.l"
 g_str += "\"";
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 82 "ruby.l"
+#line 112 "ruby.l"
 g_str += "'";
 	YY_BREAK
 case 17:
 /* rule 17 can match eol */
 YY_RULE_SETUP
-#line 84 "ruby.l"
+#line 114 "ruby.l"
 g_str += yytext[1];
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 86 "ruby.l"
+#line 116 "ruby.l"
 g_str += std::string(yytext);
 	YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 87 "ruby.l"
+#line 117 "ruby.l"
 g_str += std::string(yytext);
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 89 "ruby.l"
+#line 119 "ruby.l"
 { current_line_indent++; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 90 "ruby.l"
+#line 120 "ruby.l"
 { current_line_indent = (current_line_indent + 8) & ~7; }
 	YY_BREAK
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 91 "ruby.l"
+#line 121 "ruby.l"
 { current_line_indent = 0; yycolumn = 1;/*ignoring blank line */ }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 92 "ruby.l"
+#line 122 "ruby.l"
 { current_line_indent = 0; yycolumn = 1;/*ignoring blank line */ }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 93 "ruby.l"
+#line 123 "ruby.l"
 {
                    unput(*yytext);
                    yycolumn--;
@@ -1071,7 +1101,7 @@ YY_RULE_SETUP
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 107 "ruby.l"
+#line 137 "ruby.l"
 { current_line_indent = 0; BEGIN( indent); yycolumn = 1; }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -1081,7 +1111,7 @@ case YY_STATE_EOF(str):
 case YY_STATE_EOF(qstr):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(incl):
-#line 108 "ruby.l"
+#line 138 "ruby.l"
 { 
                    yypop_buffer_state();
                    fileNames.pop();
@@ -1092,228 +1122,228 @@ case YY_STATE_EOF(incl):
                    }
                    if( curr_indents.size() > 1 ) {
                         curr_indents.pop();
-                        return  UNINDENT;
+                        return UNINDENT;
                    }
                  }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 123 "ruby.l"
+#line 153 "ruby.l"
 /* cr are ignored */
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 124 "ruby.l"
+#line 154 "ruby.l"
 return TIF;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 125 "ruby.l"
+#line 155 "ruby.l"
 return TELSE;
 	YY_BREAK
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 126 "ruby.l"
+#line 156 "ruby.l"
 return TRETURN_SIMPLE;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 127 "ruby.l"
+#line 157 "ruby.l"
 return TRETURN;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 128 "ruby.l"
+#line 158 "ruby.l"
 return TNOT;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 129 "ruby.l"
+#line 159 "ruby.l"
 return TAND;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 130 "ruby.l"
+#line 160 "ruby.l"
 return TOR;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 131 "ruby.l"
+#line 161 "ruby.l"
 return TDEF;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 132 "ruby.l"
+#line 162 "ruby.l"
 return TVAR;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 133 "ruby.l"
+#line 163 "ruby.l"
 return TWHILE;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 134 "ruby.l"
+#line 164 "ruby.l"
 return IS;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 135 "ruby.l"
+#line 165 "ruby.l"
 return TBOOL;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 136 "ruby.l"
+#line 166 "ruby.l"
 return TBOOL;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 137 "ruby.l"
+#line 167 "ruby.l"
 return TTO;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 138 "ruby.l"
+#line 168 "ruby.l"
 /* comments one line til nl */
 	YY_BREAK
 case 42:
 /* rule 42 can match eol */
 YY_RULE_SETUP
-#line 139 "ruby.l"
+#line 169 "ruby.l"
 /* ignore */;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 140 "ruby.l"
+#line 170 "ruby.l"
 return TIDENTIFIER;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 141 "ruby.l"
+#line 171 "ruby.l"
 return TINTEGER;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 142 "ruby.l"
+#line 172 "ruby.l"
 return TDOUBLE;
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 143 "ruby.l"
+#line 173 "ruby.l"
 return TRANGE;
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 144 "ruby.l"
+#line 174 "ruby.l"
 return TRANGE;
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 145 "ruby.l"
+#line 175 "ruby.l"
 return TEQUAL;
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 146 "ruby.l"
+#line 176 "ruby.l"
 return  TCEQ;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 147 "ruby.l"
+#line 177 "ruby.l"
 return  TCNE;
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 148 "ruby.l"
+#line 178 "ruby.l"
 return  TLTLT;
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 149 "ruby.l"
+#line 179 "ruby.l"
 return  TCLT;
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 150 "ruby.l"
+#line 180 "ruby.l"
 return  TCLE;
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 151 "ruby.l"
+#line 181 "ruby.l"
 return  TCGT;
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 152 "ruby.l"
+#line 182 "ruby.l"
 return  TCGE;
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 153 "ruby.l"
+#line 183 "ruby.l"
 return  TLPAREN;
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 154 "ruby.l"
+#line 184 "ruby.l"
 return  TRPAREN;
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 155 "ruby.l"
+#line 185 "ruby.l"
 return  TDOT;
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 156 "ruby.l"
+#line 186 "ruby.l"
 return  TCOMMA;
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 157 "ruby.l"
+#line 187 "ruby.l"
 return  TPLUS;
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 158 "ruby.l"
+#line 188 "ruby.l"
 return  TMINUS;
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 159 "ruby.l"
+#line 189 "ruby.l"
 return  TMUL;
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 160 "ruby.l"
+#line 190 "ruby.l"
 return  TDIV;
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 161 "ruby.l"
+#line 191 "ruby.l"
 return  TCOLON;
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 162 "ruby.l"
+#line 192 "ruby.l"
 return  TLBRACKET;
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 163 "ruby.l"
+#line 193 "ruby.l"
 return  TRBRACKET;
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 164 "ruby.l"
+#line 194 "ruby.l"
 printf("line %d, len %d Unknown token %s !\n", yylineno, yyleng, yytext); yyterminate();
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 166 "ruby.l"
+#line 196 "ruby.l"
 ECHO;
 	YY_BREAK
-#line 1317 "lex.yy.c"
+#line 1347 "lex.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2324,7 +2354,14 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 166 "ruby.l"
+#line 196 "ruby.l"
 
+
+
+int yyerror(char const * s )
+{
+    printf("ERROR %s in '%s' at line %d col %d\n", s, yytext, yylineno, yycolumn);
+    return 1;
+}
 
 
