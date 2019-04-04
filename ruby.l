@@ -4,7 +4,6 @@
   #include <string.h>
   #include "parse.tab.h"
 
-  #define YY_DECL 			int yylex(YYSTYPE *yylval, parser_state *state)
   #define token(id) 		{return t##id;}
   #define key(id) 			{return keyword_##id;}
 
@@ -17,11 +16,9 @@ NUMBER [0-9](_[0-9]|[0-9])*
 
 %%
 
-/* comments */
 #.*$ {}	
 
-	
-/* keywords */
+
 "class"		key(class)
 "module"	key(module)
 "def"		key(def)
@@ -44,9 +41,9 @@ NUMBER [0-9](_[0-9]|[0-9])*
 "next"		key(next)
 "redo"		key(redo)
 "retry"		key(retry)
-"in"		key(int)
+"in"		key(in)
 "do"		key(do)
-// accounts for do_cond, do_LAMBDA, do_block 
+
 "return"	key(return)
 "yield"		key(yield)
 "super"		key(super)
@@ -57,32 +54,24 @@ NUMBER [0-9](_[0-9]|[0-9])*
 "and"		key(and)
 "or"		key(or)
 "not"		key(not)
-"if"		key(if)
 "alias"		key(alias)
 "defined"	key(defined)
 "BEGIN"		key(BEGIN)
 "END"		key(END)
 
 
-/* tokens */
-
-// string
 \"([^"]|\\.)*\"		token(STRING_CONTENT)
 \'([^']|\\.)*\'		token(STRING_CONTENT)
 
-// data types
-{NUMBER}(\.{NUMBER}|(\.{NUMBER})?[eE][+-]?{NUMBER})		token(FLOAT)
-{NUMBER}												token(INTEGER)
-[a-zA-Z]												token(CHAR)
-
-// var types
 [a-z_][a-zA-Z0-9_]*			token(IDENTIFIER)
 [A-Z][a-zA-Z0-9_]*			token(CONSTANT)
 $[a-zA-Z_][a-zA-Z0-9_]*		token(GVAR)
 @[a-zA-Z_][a-zA-Z0-9_]*		token(IVAR)
 @@[a-zA-Z_][a-zA-Z0-9_]*	token(CVAR)
 
-// special symbols
+{NUMBER}(\.{NUMBER}|(\.{NUMBER})?[eE][+-]?{NUMBER})		token(FLOAT)
+{NUMBER}												token(INTEGER)
+
 "**"	token(POW)
 "<=>"	token(CMP)
 "=="	token(EQ)
@@ -105,18 +94,7 @@ $[a-zA-Z_][a-zA-Z0-9_]*		token(GVAR)
 "=>"	token(ASSOC)
 "->"	token(LAMBDA)
 
-
-/* ignore white spaces */
 [\t ] {}
-\n {}
 
-
-/*	unknown token */
-. { fprintf(stderr, "Unknown token '%s'\n", yytext); }
-*/
-
+.|\n {}
 %%
-
-void yyerror(char const *s) {
-  fprintf(stderr, "%s. Unexpected \"%s\" on line %d\n", s, yytext, yylineno);
-}
